@@ -56,11 +56,27 @@ class App extends Component {
     };
     
     this.setSearchTopStories = this.setSearchTopStories.bind(this);
+    this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
+    this.onSearchSubmit = this.onSearchSubmit.bind(this);
     this.onSeachChange = this.onSeachChange.bind(this);
+
   }
 
- 
+  fetchSearchTopStories(searchTerm) {
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
+      .then(response => response.json())
+      .then(result => this.setSearchTopStories(result))
+      .catch(error => error);
+}
+
+  onSearchSubmit(event){
+    const {searchTerm} = this.state;
+    this.fetchSearchTopStories(searchTerm);
+    event.preventDefault();
+
+  }
+
   setSearchTopStories(result){
     this.setState({result});
 
@@ -109,20 +125,20 @@ class App extends Component {
           <Search
             value = {searchTerm}
             onChange ={this.onSeachChange}
+            onSubmit = {this.onSearchSubmit}
             >
             Search
           </Search>
 
         </div>
-
+{result &&
         <Table 
           list = {result.hits}
-          pattern = {searchTerm}
           onDismiss = {this.onDismiss}
         />
-      
+ 
         
-
+  }
             
       </div>
     );
@@ -131,9 +147,10 @@ class App extends Component {
 
 
 // keeps the input are props(destructed) and output = JSK 
-const Search = ({value,onChange,children}) => 
-    <form>
-    {children}  <input type ="text" value = {value} onChange= {onChange} />
+const Search = ({value,onChange,onSubmit,children}) => 
+    <form onSubmit={onSubmit}> 
+      <input type ="text" value = {value} onChange= {onChange} />
+      <button type ='submit'>{children}</button>
     </form>
  
 
@@ -141,7 +158,7 @@ const Search = ({value,onChange,children}) =>
 
  const Table = ({ list, pattern, onDismiss }) =>
  <div className="table">
-   {list.filter(isSearched(pattern)).map(item =>
+   {list.map(item =>
      <div key={item.objectID} className="table-row">
        <span style={{ width: '40%' }}>
          <a href={item.url}>{item.title}</a>
