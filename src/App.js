@@ -4,46 +4,21 @@ import './App.css';
 
 
 const DEFAULT_QUERY = 'redux';
+const DEFAULT_HPP = '100';
 
 
 const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+const PARAM_HPP = 'hitsPerPage=';
 
 // template strings using the left hand corner `
-const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}`;
+const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}&${PARAM_PAGE }`;
 console.log(url);
 
 
 
-const list = [
-  {
-  title: 'React',
-  url: 'https://facebook.github.io/react/',
-  author: 'Jordan Walke',
-  num_comments: 3,
-  points: 4,
-  objectID: 0,
-  },
-  {
-  title: 'Redux',
-  url: 'https://github.com/reactjs/redux',
-  author: 'Dan Abramov, Andrew Clark',
-  num_comments: 2,
-  points: 5,
-  objectID: 1,
-  },
-
-  ];
-
-  const arr = ['edwin','hannah','max'];
-
-  function isSearched(searchTerm){
-    return function(item){
-      //some condition
-      return item.title.toLowerCase().includes(searchTerm.toLowerCase());
-    }
-  }
   
 class App extends Component {
 
@@ -63,11 +38,11 @@ class App extends Component {
 
   }
 
-  fetchSearchTopStories(searchTerm) {
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`)
-      .then(response => response.json())
-      .then(result => this.setSearchTopStories(result))
-      .catch(error => error);
+  fetchSearchTopStories(searchTerm, page = 0) {
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`).then(response => response.json())
+    .then(result => this.setSearchTopStories(result))
+    .catch(error => error);
+
 }
 
   onSearchSubmit(event){
@@ -78,7 +53,13 @@ class App extends Component {
   }
 
   setSearchTopStories(result){
-    this.setState({result});
+    const {hits,page} = result;
+    // we must check if there are already oldHits, when page == 0
+    const oldHits = page !== 0 ? this.state.result.hits : [];
+
+    const updatedHits = [...oldHits,...hits];
+
+    this.setState({result: {hits: updatedHits,page}});
 
   }
 
@@ -114,6 +95,7 @@ class App extends Component {
     const {searchTerm, result} = this.state;
     console.log(result);
 
+    const page = (result && result.page) || 0;
     if(!result){
       return null;
     }
@@ -139,6 +121,10 @@ class App extends Component {
  
         
   }
+        <div className = "interactions">
+          <button onClick= {() => this.fetchSearchTopStories(searchTerm,page +1)}> More</button>
+          
+        </div>
             
       </div>
     );
