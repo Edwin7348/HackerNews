@@ -28,6 +28,8 @@ class App extends Component {
      results: null,
      searchKey: '',
      searchTerm: DEFAULT_QUERY,
+     error: null,
+
     
     };
     
@@ -48,7 +50,7 @@ class App extends Component {
   fetchSearchTopStories(searchTerm, page = 0) {
     fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`).then(response => response.json())
     .then(result => this.setSearchTopStories(result))
-    .catch(error => error);
+    .catch(error => this.setState({error}));
 
 }
 
@@ -124,53 +126,62 @@ class App extends Component {
   }
 
   render() {
-    // the <form> will have a onCHnage event that will call the compnet method onSeachChange
-    // this will keep updateing the state which means updating the searchTerm stored inside the component
-    // then render will keep re-rendering based on the change and it will keep trigging the filter function 
-    //before the mapping of the list that displays the internal LIST
-    // this new filter will accept a funtion thats outside the class so we need to pass in a higher order function
-    // that returns a new function that acepts the ITEM then we can acccess it
-    const {searchTerm, results,searchKey} = this.state;
-    
-
-    const page = (results && results[searchKey] && results[searchKey].page) || 0;
-
-    
-    
-    const list = (
-      results &&
-      results[searchKey] &&
-      results[searchKey].hits) || [];
-
-
-
-    return (
-      <div className="page">
-        <div className ="interactions">
-          <Search
-            value = {searchTerm}
-            onChange ={this.onSeachChange}
-            onSubmit = {this.onSearchSubmit}
-            >
-            Search
-          </Search>
-
-        </div>
-
-        <Table 
-          list = {list}
-          onDismiss = {this.onDismiss}
-        />
- 
+        // the <form> will have a onCHnage event that will call the compnet method onSeachChange
+        // this will keep updateing the state which means updating the searchTerm stored inside the component
+        // then render will keep re-rendering based on the change and it will keep trigging the filter function 
+        //before the mapping of the list that displays the internal LIST
+        // this new filter will accept a funtion thats outside the class so we need to pass in a higher order function
+        // that returns a new function that acepts the ITEM then we can acccess it
+        const {searchTerm, results,searchKey, error} = this.state;
         
-  
-        <div className = "interactions">
-          <button onClick= {() => this.fetchSearchTopStories(searchKey,page +1)}> More</button>
+
+        const page = (results && results[searchKey] && results[searchKey].page) || 0;
+
+        
+        
+        const list = (
+          results &&
+          results[searchKey] &&
+          results[searchKey].hits) || [];
+
+          if(error){
+            return <p>Something went wrong</p>;
+          }
+
+
+        return (
+          <div className="page">
+            <div className ="interactions">
+              <Search
+                value = {searchTerm}
+                onChange ={this.onSeachChange}
+                onSubmit = {this.onSearchSubmit}
+                >
+                Search
+              </Search>
+
+            </div>
+
           
-        </div>
+
+      { error 
+        ? <div className="interactions">
+              <p>Something went wrong.</p>
+          </div>
+        : <Table
+             list={list}
+              onDismiss={this.onDismiss}
+         /> }  
+    
             
-      </div>
-    );
+      
+            <div className = "interactions">
+              <button onClick= {() => this.fetchSearchTopStories(searchKey,page +1)}> More</button>
+              
+            </div>
+                
+          </div>
+        );
   }
 }
 
