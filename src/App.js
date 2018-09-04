@@ -25,11 +25,14 @@ class App extends Component {
   constructor(props){
     super(props);
     this.state = {
-     result: null,
+     results: null,
+     searchKey: '',
      searchTerm: DEFAULT_QUERY,
     
     };
     
+    
+    this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
     this.setSearchTopStories = this.setSearchTopStories.bind(this);
     this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
     this.onDismiss = this.onDismiss.bind(this);
@@ -37,6 +40,10 @@ class App extends Component {
     this.onSeachChange = this.onSeachChange.bind(this);
 
   }
+
+  needsToSearchTopStories(searchTerm) {
+    return !this.state.results[searchTerm];
+}
 
   fetchSearchTopStories(searchTerm, page = 0) {
     fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`).then(response => response.json())
@@ -47,37 +54,68 @@ class App extends Component {
 
   onSearchSubmit(event){
     const {searchTerm} = this.state;
-    this.fetchSearchTopStories(searchTerm);
+    this.setState({searchKey: searchTerm});
+
+    if (this.needsToSearchTopStories(searchTerm)) {
+      this.fetchSearchTopStories(searchTerm);
+    }
+
     event.preventDefault();
 
   }
 
   setSearchTopStories(result){
     const {hits,page} = result;
+    const {searchKey, results} = this.state;
+
+
     // we must check if there are already oldHits, when page == 0
-    const oldHits = page !== 0 ? this.state.result.hits : [];
+    const oldHits = results && results[searchKey] ? results[searchKey].hits : [];
 
     const updatedHits = [...oldHits,...hits];
 
-    this.setState({result: {hits: updatedHits,page}});
+    // the [searchKey] is an computer property name which is part of Es6 to allocate values dynamically in an object
+    this.setState({
+      results: {...results,[searchKey]: { hits: updatedHits, page} }   });
 
   }
 
   //it will fetch the data after the component did mount, in the very first fetch, the defualt searchterm will be about 'redux' stories
   componentDidMount(){
     const {searchTerm} = this.state;
+
+    this.setState({searchKey: searchTerm});
+
     //a url is the arguemnt for the built in fetch API function
     // the first step is turn the response from the fetch request into a JSON object(mandatory), then that JSON obj is set as the interal state results.
     // if there is an error when fetcing, that last catch function will run instead of the .then funcs
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}`).then(response => response.json()).then(result => this.setSearchTopStories(result)).catch(error => error);
+
+    this.fetchSearchTopStories(searchTerm);
   }
 
   onDismiss(id){
 
+    const { searchKey, results } = this.state;
+    const { hits, page } = results[searchKey];
+
+
     const isNotId = item => item.objectID !== id;
-    const updatedHits = this.state.result.hits.filter(isNotId);
+
+    const updatedHits = hits.filter(isNotId);
+
+    
 
     this.setState({result: {...this.state.result, hits: updatedHits}});
+
+    this.setState({
+      results: {...results,[searchKey]: { hits: updatedHits, page }}
+    });
+  
+  
+
+
+
+
   }
 
   onSeachChange(event){
@@ -92,14 +130,19 @@ class App extends Component {
     //before the mapping of the list that displays the internal LIST
     // this new filter will accept a funtion thats outside the class so we need to pass in a higher order function
     // that returns a new function that acepts the ITEM then we can acccess it
-    const {searchTerm, result} = this.state;
-    console.log(result);
-
-    const page = (result && result.page) || 0;
-    if(!result){
-      return null;
-    }
+    const {searchTerm, results,searchKey} = this.state;
     
+
+    const page = (results && results[searchKey] && results[searchKey].page) || 0;
+
+    
+    
+    const list = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].hits) || [];
+
+
 
     return (
       <div className="page">
@@ -113,16 +156,16 @@ class App extends Component {
           </Search>
 
         </div>
-{result &&
+
         <Table 
-          list = {result.hits}
+          list = {list}
           onDismiss = {this.onDismiss}
         />
  
         
-  }
+  
         <div className = "interactions">
-          <button onClick= {() => this.fetchSearchTopStories(searchTerm,page +1)}> More</button>
+          <button onClick= {() => this.fetchSearchTopStories(searchKey,page +1)}> More</button>
           
         </div>
             
